@@ -51,6 +51,14 @@ WebDriverWait(driver, 20).until(
 )
 print("Página carregada.")
 
+# Verifica se há iframes e muda para o primeiro, se existir
+iframes = driver.find_elements(By.TAG_NAME, "iframe")
+if iframes:
+    driver.switch_to.frame(iframes[0])
+    print("Mudou para o primeiro iframe encontrado.")
+else:
+    print("Nenhum iframe encontrado.")
+
 # Índices que queremos baixar
 indices = ["Quadro Resumo", "IMA-B", "IMA-B 5", "IMA-B 5+"]
 
@@ -72,7 +80,17 @@ for date in dates:
         print(f"Erro ao encontrar o campo de data: {str(e)}")
         with open("page_source.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
-        raise e
+        # Tenta um XPath alternativo baseado em inspeção manual
+        try:
+            date_field = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.ID, "ctl00_PlaceHolderMain_txtData"))
+            )
+            date_field.clear()
+            date_field.send_keys(date)
+            print("Campo de data encontrado com XPath alternativo.")
+        except Exception as alt_e:
+            print(f"XPath alternativo também falhou: {str(alt_e)}")
+            raise e
 
     # Loop para cada índice
     for index in indices:
