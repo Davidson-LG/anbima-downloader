@@ -45,6 +45,12 @@ driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), opti
 url = "https://www.anbima.com.br/pt_br/informar/ima-resultados-diarios.htm"
 driver.get(url)
 
+# Aguarda a página carregar completamente
+WebDriverWait(driver, 20).until(
+    EC.presence_of_element_located((By.TAG_NAME, "body"))
+)
+print("Página carregada.")
+
 # Índices que queremos baixar
 indices = ["Quadro Resumo", "IMA-B", "IMA-B 5", "IMA-B 5+"]
 
@@ -55,7 +61,7 @@ dates = get_last_5_business_days()
 for date in dates:
     print(f"Baixando relatórios para {date}...")
     
-    # Campo de data
+    # Campo de data (com verificação ajustada)
     date_field = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.XPATH, "//input[@placeholder='dd/mm/aaaa']"))
     )
