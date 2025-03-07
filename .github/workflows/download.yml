@@ -26,15 +26,31 @@ jobs:
         python -m pip install --upgrade pip
         pip install selenium webdriver-manager
 
-    # Instala o Chrome e o ChromeDriver
+    # Instala o Chrome e o ChromeDriver de forma mais robusta
     - name: Install Chrome and ChromeDriver
       run: |
+        # Atualiza os pacotes e instala dependências necessárias
+        sudo apt-get update
+        sudo apt-get install -y wget unzip libglib2.0-0 libnss3 libgconf-2-4 libfontconfig1
+
+        # Instala o Google Chrome estável
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        echo "deb http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
-        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
-        wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$(curl https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%.*})/chromedriver_linux64.zip
+
+        # Obtém a versão do Chrome instalada
+        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+' | head -1)
+        echo "Versão do Chrome instalada: $CHROME_VERSION"
+
+        # Baixa a versão correspondente do ChromeDriver
+        CHROMEDRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%%.*}")
+        wget -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip"
+
+        # Extrai e configura o ChromeDriver
         sudo unzip /tmp/chromedriver.zip -d /usr/local/bin/
         sudo chmod +x /usr/local/bin/chromedriver
+        chromedriver --version  # Verifica a instalação
 
     # Roda o script de download
     - name: Run download script
