@@ -22,12 +22,20 @@ def get_last_5_business_days():
 # Configurações do Selenium
 options = webdriver.ChromeOptions()
 options.add_argument("--headless")  # Rodar sem interface gráfica
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--no-sandbox")  # Necessário no GitHub Actions
+options.add_argument("--disable-dev-shm-usage")  # Necessário no GitHub Actions
+options.add_argument("--disable-gpu")  # Desativa GPU em headless
+options.add_argument("--window-size=1920,1080")  # Define tamanho da janela para evitar problemas de renderização
 
-# Diretório para salvar os arquivos
-download_dir = "/path/to/save/files"  # Ajuste para o diretório desejado
-prefs = {"download.default_directory": download_dir}
+# Diretório para salvar os arquivos (ajustado para o GitHub Actions)
+download_dir = os.path.join(os.getcwd(), "downloads")
+os.makedirs(download_dir, exist_ok=True)  # Cria o diretório se não existir
+prefs = {
+    "download.default_directory": download_dir,
+    "download.prompt_for_download": False,  # Desativa prompt de download
+    "download.directory_upgrade": True,
+    "safebrowsing.enabled": True
+}
 options.add_experimental_option("prefs", prefs)
 
 # Inicializa o driver
