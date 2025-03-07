@@ -61,12 +61,18 @@ dates = get_last_5_business_days()
 for date in dates:
     print(f"Baixando relatórios para {date}...")
     
-    # Campo de data (com verificação ajustada)
-    date_field = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.XPATH, "//input[@placeholder='dd/mm/aaaa']"))
-    )
-    date_field.clear()
-    date_field.send_keys(date)
+    # Campo de data (com depuração em caso de erro)
+    try:
+        date_field = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//input[@placeholder='dd/mm/aaaa']"))
+        )
+        date_field.clear()
+        date_field.send_keys(date)
+    except Exception as e:
+        print(f"Erro ao encontrar o campo de data: {str(e)}")
+        with open("page_source.html", "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+        raise e
 
     # Loop para cada índice
     for index in indices:
