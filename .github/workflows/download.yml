@@ -1,0 +1,49 @@
+name: Download ANBIMA Reports
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Roda toda segunda-feira às 08:00 UTC (ajuste para seu fuso horário)
+
+jobs:
+  download-reports:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout do repositório
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Configura o Python
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    # Instala dependências
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install selenium webdriver-manager
+
+    # Instala o Chrome e o ChromeDriver
+    - name: Install Chrome and ChromeDriver
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+')
+        wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$(curl https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION%.*})/chromedriver_linux64.zip
+        sudo unzip /tmp/chromedriver.zip -d /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chromedriver
+
+    # Roda o script de download
+    - name: Run download script
+      run: python download_reports.py
+
+    # (Opcional) Commit dos arquivos baixados no repositório
+    - name: Commit downloaded files
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Add downloaded ANBIMA reports for $(date +%Y-%m-%d)" || echo "No changes to commit"
+        git push
