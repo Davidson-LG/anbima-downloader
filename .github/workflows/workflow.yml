@@ -1,31 +1,50 @@
-# .github/workflows/download_anbima.yml
-name: Download ANBIMA Reports
+# .github/workflows/download.yml
+
+name: Download ANBIMA Relatórios
 
 on:
   schedule:
-    - cron: '0 11 * * 1' # Segunda-feira 08:00 Brasília (11:00 UTC)
-  workflow_dispatch: # Permite rodar manualmente também
+    - cron: '0 11 * * 1'  # Segunda-feira 08:00 Brasília (11h UTC)
+  workflow_dispatch:  # Permite rodar manualmente também
 
 jobs:
   download:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repositório
+    - name: Checkout do repositório
       uses: actions/checkout@v4
 
-    - name: Instalar dependências
+    - name: Instalar Google Chrome
       run: |
         sudo apt update
-        sudo apt install -y chromium-driver
+        sudo apt install -y wget unzip
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo apt install -y ./google-chrome-stable_current_amd64.deb
+
+    - name: Instalar ChromeDriver
+      run: |
+        CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
+        wget -N https://chromedriver.storage.googleapis.com/${CHROME_VERSION}.0.0/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        sudo mv chromedriver /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chromedriver
+
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Instalar dependências Python
+      run: |
         pip install selenium
 
-    - name: Rodar script de download
+    - name: Rodar o script Python
       run: |
         python download_anbima.py
 
-    - name: Upload arquivos para o workflow (opcional)
+    - name: Salvar arquivos como artifacts
       uses: actions/upload-artifact@v4
       with:
         name: relatorios-anbima
-        path: downloads/
+        path: downloads/*.csv
