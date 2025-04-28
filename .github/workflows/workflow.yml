@@ -15,35 +15,14 @@ jobs:
     - name: Checkout do repositório
       uses: actions/checkout@v4
 
-    - name: Instalar Google Chrome 123
+    - name: Instalar Google Chrome
       run: |
         sudo apt update
-        sudo apt install -y wget unzip
-        wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_123.0.6312.86-1_amd64.deb
-        sudo apt install -y ./google-chrome-stable_123.0.6312.86-1_amd64.deb
+        sudo apt install -y wget unzip gnupg2
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt update
+        sudo apt install -y google-chrome-stable
 
-    - name: Instalar ChromeDriver 123
+    - name: Instalar ChromeDriver compatível
       run: |
-        wget https://chromedriver.storage.googleapis.com/123.0.6312.86/chromedriver_linux64.zip
-        unzip chromedriver_linux64.zip
-        sudo mv chromedriver /usr/local/bin/
-        sudo chmod +x /usr/local/bin/chromedriver
-
-    - name: Configurar Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Instalar dependências Python
-      run: |
-        pip install selenium
-
-    - name: Rodar o script Python
-      run: |
-        python download_anbima.py
-
-    - name: Salvar arquivos como artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: relatorios-anbima
-        path: downloads/*.csv
