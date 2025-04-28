@@ -96,7 +96,7 @@ credentials = Credentials.from_service_account_file('credentials.json', scopes=s
 gc = gspread.authorize(credentials)
 
 # ID da pasta do Drive
-folder_id = 'https://drive.google.com/drive/folders/1Q-wo4KFvGIZEEe9PoTMt_TPUK9Kuww_e?usp=drive_link'
+folder_id = '1Q-wo4KFvGIZEEe9PoTMt_TPUK9Kuww_e?usp=drive_link'
 
 from googleapiclient.discovery import build
 service = build('drive', 'v3', credentials=credentials)
