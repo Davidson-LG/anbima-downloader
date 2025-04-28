@@ -5,6 +5,10 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
+import gspread
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 
 # Cria a pasta de downloads, se não existir
 os.makedirs('downloads', exist_ok=True)
@@ -25,7 +29,7 @@ chrome_options.add_experimental_option("prefs", prefs)
 # Inicia o Chrome
 driver = webdriver.Chrome(options=chrome_options)
 
-# Acessa a página da ANBIMA
+# Acessa a página direta
 driver.get('https://www.anbima.com.br/informacoes/ima/ima.asp')
 
 # Pequena pausa para carregar
@@ -84,24 +88,15 @@ for nome_exibicao, valor_select, nome_arquivo in indices:
 driver.quit()
 print("Todos downloads concluídos!")
 
-# Parte para o upload no Google Drive
-import gspread
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-
-# Autenticar
+# Autenticar no Google Drive
 scopes = ["https://www.googleapis.com/auth/drive"]
 credentials = Credentials.from_service_account_file('credentials.json', scopes=scopes)
 gc = gspread.authorize(credentials)
 
 # ID da pasta do Drive
-folder_id = '1Q-wo4KFvGIZEEe9PoTMt_TPUK9Kuww_e?usp=drive_link'
+folder_id = '1Q-wo4KFvGIZEEe9PoTMt_TPUK9Kuww_e'
 
-# Configuração do Google Drive
-service = build('drive', 'v3', credentials=credentials)
-
-# Upload dos arquivos
+# Função para upload no Google Drive
 def upload_to_drive(filepath, folder_id):
     filename = os.path.basename(filepath)
     file_metadata = {
@@ -111,6 +106,9 @@ def upload_to_drive(filepath, folder_id):
     media = MediaFileUpload(filepath, resumable=True)
     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
     print(f'Arquivo {filename} enviado para o Google Drive.')
+
+# Criando o serviço do Google Drive
+service = build('drive', 'v3', credentials=credentials)
 
 # Enviar todos arquivos da pasta downloads/
 downloads_path = 'downloads'
