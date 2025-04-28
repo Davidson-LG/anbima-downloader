@@ -5,7 +5,7 @@ name: Download ANBIMA Relatórios
 on:
   schedule:
     - cron: '0 11 * * 1'  # Segunda-feira 08:00 Brasília (11h UTC)
-  workflow_dispatch:  # Permite rodar manualmente também
+  workflow_dispatch:
 
 jobs:
   download:
@@ -15,17 +15,16 @@ jobs:
     - name: Checkout do repositório
       uses: actions/checkout@v4
 
-    - name: Instalar Google Chrome
+    - name: Instalar Google Chrome 123
       run: |
         sudo apt update
         sudo apt install -y wget unzip
-        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        sudo apt install -y ./google-chrome-stable_current_amd64.deb
+        wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_123.0.6312.86-1_amd64.deb
+        sudo apt install -y ./google-chrome-stable_123.0.6312.86-1_amd64.deb
 
-    - name: Instalar ChromeDriver
+    - name: Instalar ChromeDriver 123
       run: |
-        CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
-        wget -N https://chromedriver.storage.googleapis.com/${CHROME_VERSION}.0.0/chromedriver_linux64.zip
+        wget https://chromedriver.storage.googleapis.com/123.0.6312.86/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
         sudo mv chromedriver /usr/local/bin/
         sudo chmod +x /usr/local/bin/chromedriver
