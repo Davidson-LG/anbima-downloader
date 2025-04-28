@@ -1,0 +1,31 @@
+# .github/workflows/download_anbima.yml
+name: Download ANBIMA Reports
+
+on:
+  schedule:
+    - cron: '0 11 * * 1' # Segunda-feira 08:00 Brasília (11:00 UTC)
+  workflow_dispatch: # Permite rodar manualmente também
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repositório
+      uses: actions/checkout@v4
+
+    - name: Instalar dependências
+      run: |
+        sudo apt update
+        sudo apt install -y chromium-driver
+        pip install selenium
+
+    - name: Rodar script de download
+      run: |
+        python download_anbima.py
+
+    - name: Upload arquivos para o workflow (opcional)
+      uses: actions/upload-artifact@v4
+      with:
+        name: relatorios-anbima
+        path: downloads/
