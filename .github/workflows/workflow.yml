@@ -1,30 +1,27 @@
-# .github/workflows/download.yml
-
-name: Download ANBIMA Relatórios
+name: Download Anbima Automático
 
 on:
   schedule:
-    - cron: '0 11 * * 1'  # Segunda-feira 08:00 Brasília (11h UTC)
-  workflow_dispatch:
+    - cron: '0 8 * * 1' # Toda segunda-feira às 08:00
+  workflow_dispatch: # Permite executar manualmente também
 
 jobs:
-  download:
+  download_anbima:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout do repositório
+    - name: Checkout repositório
       uses: actions/checkout@v4
 
-    - name: Instalar Google Chrome
+    - name: Instalar dependências
       run: |
-        sudo apt update
-        sudo apt install -y wget unzip gnupg2
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-        sudo apt update
-        sudo apt install -y google-chrome-stable
+        sudo apt-get update
+        sudo apt-get install -y wget unzip curl python3 python3-pip google-chrome-stable
 
-    - name: Instalar ChromeDriver compatível
+    - name: Instalar Google Chrome
+      uses: browser-actions/setup-chrome@v1
+
+    - name: Baixar e instalar ChromeDriver correto
       run: |
         # Obtenha a versão do Chrome
         CHROME_VERSION=$(google-chrome-stable --version | sed 's/Google Chrome //' | awk '{print $1}')
@@ -49,15 +46,10 @@ jobs:
         sudo mv chromedriver /usr/local/bin/chromedriver
         sudo chmod +x /usr/local/bin/chromedriver
 
-    - name: Instalar dependências Python
+    - name: Instalar dependências do Python
       run: |
-        python3 -m venv venv
-        source venv/bin/activate
         pip install -r requirements.txt
 
-    - name: Rodar o script de download
-      env:
-        GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+    - name: Rodar script de download
       run: |
-        source venv/bin/activate
-        python download_anbima.py
+        python3 download_anbima.py
