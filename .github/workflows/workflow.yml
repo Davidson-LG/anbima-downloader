@@ -24,14 +24,14 @@ jobs:
           DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
         fi
         echo "Driver version: $DRIVER_VERSION"
-        echo "URL para download do chromedriver: https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
-
-    - name: Baixar e instalar o ChromeDriver
-      run: |
         if [ -z "$DRIVER_VERSION" ]; then
           echo "Erro: DRIVER_VERSION não foi atribuído corretamente."
           exit 1
         fi
+        echo "URL para download do chromedriver: https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
+
+    - name: Baixar e instalar o ChromeDriver
+      run: |
         wget -O chromedriver_linux64.zip "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
         unzip chromedriver_linux64.zip
         sudo mv chromedriver /usr/local/bin/chromedriver
