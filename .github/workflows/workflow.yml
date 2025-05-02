@@ -2,7 +2,7 @@ name: Download Anbima Automático
 
 on:
   schedule:
-    - cron: '0 8 * * 1'  # Segunda-feira às 08:00
+    - cron: '0 8 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -13,14 +13,12 @@ jobs:
       - name: Checkout repositório
         uses: actions/checkout@v4
 
-      - name: Instalar Chrome antigo compatível
+      - name: Instalar Chrome 124 manualmente
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget gnupg unzip python3 python3-pip
-          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable=124.0.6367.91-1
+          sudo apt-get install -y wget unzip python3 python3-pip
+          wget https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_124.0.6367.91-1_amd64.deb
+          sudo apt install -y ./google-chrome-stable_124.0.6367.91-1_amd64.deb
 
       - name: Instalar ChromeDriver compatível
         uses: nanasess/setup-chromedriver@v2
