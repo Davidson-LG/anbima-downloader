@@ -1,10 +1,8 @@
-# .github/workflows/download.yml
-
-name: Download ANBIMA Relatórios e Upload no Google Drive
+name: Download ANBIMA Relatórios
 
 on:
   schedule:
-    - cron: '0 11 * * 1'  # Segunda-feira às 08:00 Brasília (11h UTC)
+    - cron: '0 11 * * 1'  # Segunda-feira 08:00 Brasília (11h UTC)
   workflow_dispatch:
 
 jobs:
@@ -26,12 +24,12 @@ jobs:
 
     - name: Instalar ChromeDriver compatível
       run: |
-        CHROME_VERSION=$(google-chrome-stable --version | sed 's/Google Chrome //')
+        CHROME_VERSION=$(google-chrome-stable --version | sed 's/Google Chrome //' | awk '{print $1}')
         CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
         DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION_MAJOR)
         wget https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
-        sudo mv chromedriver /usr/local/bin/
+        sudo mv chromedriver /usr/local/bin/chromedriver
         sudo chmod +x /usr/local/bin/chromedriver
 
     - name: Instalar dependências Python
@@ -41,9 +39,9 @@ jobs:
         pip install --upgrade pip
         pip install selenium gspread google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
 
-    - name: Rodar o script Python (download e upload)
+    - name: Executar script de download e upload
       env:
-        GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+        GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
       run: |
-        source venv/bin/activate
-        python seu_script.py
+        echo "${GOOGLE_APPLICATION_CREDENTIALS_JSON}" > credentials.json
+        python3 seu_script.py
