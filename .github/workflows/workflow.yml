@@ -1,4 +1,6 @@
-name: Download ANBIMA Relatórios
+# .github/workflows/download.yml
+
+name: Download ANBIMA Relatórios e Upload no Google Drive
 
 on:
   schedule:
@@ -39,9 +41,9 @@ jobs:
         pip install --upgrade pip
         pip install selenium gspread google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
 
-    - name: Rodar script de download e upload
+    - name: Rodar o script Python (download e upload)
       env:
         GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
       run: |
         source venv/bin/activate
-        python3 seu_script.py
+        python seu_script.py
