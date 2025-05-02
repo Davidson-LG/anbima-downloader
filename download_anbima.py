@@ -1,5 +1,6 @@
-# download_anbima.py
-pip install gspread google-auth google-auth-oauthlib google-auth-httplib2
+# Instalação de pacotes necessária no ambiente (no requirements ou em runtime)
+# pip install gspread google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+
 import os
 import time
 from datetime import datetime
@@ -7,13 +8,20 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
+import json
+import gspread
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+
+# --- Parte 1: Baixar arquivos da ANBIMA ---
 
 # Cria a pasta de downloads, se não existir
 os.makedirs('downloads', exist_ok=True)
 
 # Configurações do Chrome
 chrome_options = Options()
-chrome_options.add_argument('--headless')  # roda em modo invisível
+chrome_options.add_argument('--headless')
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 
@@ -24,51 +32,40 @@ prefs = {
 }
 chrome_options.add_experimental_option("prefs", prefs)
 
-# Inicia o Chrome
+# Inicia o navegador
 driver = webdriver.Chrome(options=chrome_options)
 
-# Acessa a página direta
+# Acessa o site
 driver.get('https://www.anbima.com.br/informacoes/ima/ima.asp')
-
-# Pequena pausa para carregar
 time.sleep(2)
 
-# Lista dos índices que queremos baixar
+# Lista de índices para download
 indices = [
     ('IMA-B', '3', 'IMA-B'),
     ('IMA-B 5', '4', 'IMA-B5'),
     ('IMA-B 5+', '5', 'IMA-B5+')
 ]
 
-# Data de hoje para nomear os arquivos
 hoje = datetime.now().strftime('%Y-%m-%d')
 
 for nome_exibicao, valor_select, nome_arquivo in indices:
     try:
-        # Atualiza a página a cada loop para garantir "limpeza"
         driver.get('https://www.anbima.com.br/informacoes/ima/ima.asp')
         time.sleep(2)
 
-        # Escolhe "Resultados"
         select_visualizacao = Select(driver.find_element(By.NAME, 'opcao'))
         select_visualizacao.select_by_value('resultado')
 
-        # Escolhe o índice desejado
         select_indice = Select(driver.find_element(By.NAME, 'indice'))
         select_indice.select_by_value(valor_select)
 
-        # Clica no botão "Consultar"
         driver.find_element(By.XPATH, '//input[@type="submit" and @value="Consultar"]').click()
         time.sleep(3)
 
-        # Clica no botão "Download"
         driver.find_element(By.LINK_TEXT, 'Download').click()
         print(f'Download iniciado para {nome_exibicao}...')
-
-        # Espera o download completar
         time.sleep(5)
 
-        # Renomeia o arquivo baixado
         arquivos = os.listdir('downloads')
         arquivos_csv = [arq for arq in arquivos if arq.lower().endswith('.csv')]
 
@@ -86,22 +83,19 @@ for nome_exibicao, valor_select, nome_arquivo in indices:
 driver.quit()
 print("Todos downloads concluídos!")
 
-import gspread
-from google.oauth2.service_account import Credentials
-import os
+# --- Parte 2: Enviar para o Google Drive ---
 
-# Autenticar
+# Lê o segredo do JSON armazenado no ambiente
+service_account_info = json.loads(os.getenv('GOOGLE_CREDENTIALS_JSON'))
 scopes = ["https://www.googleapis.com/auth/drive"]
-credentials = Credentials.from_service_account_file('credentials.json', scopes=scopes)
-gc = gspread.authorize(credentials)
+credentials = Credentials.from_service_account_info(service_account_info, scopes=scopes)
 
-# ID da pasta do Drive
-folder_id = '1Q-wo4KFvGIZEEe9PoTMt_TPUK9Kuww_e?usp=drive_link'
-
-from googleapiclient.discovery import build
+# Inicializa a API do Drive
 service = build('drive', 'v3', credentials=credentials)
 
-# Upload dos arquivos
+# ID da pasta de destino no Drive (somente o ID, sem link ou parâmetros)
+folder_id = '1Q-wo4KFvGIZEEe9PoTMt_TPUK9Kuww_e'  # <--- ajuste aqui
+
 def upload_to_drive(filepath, folder_id):
     filename = os.path.basename(filepath)
     file_metadata = {
@@ -112,9 +106,6 @@ def upload_to_drive(filepath, folder_id):
     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
     print(f'Arquivo {filename} enviado para o Google Drive.')
 
-from googleapiclient.http import MediaFileUpload
-
-# Enviar todos arquivos da pasta downloads/
 downloads_path = 'downloads'
 for file in os.listdir(downloads_path):
     if file.endswith('.csv'):
