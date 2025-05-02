@@ -1,3 +1,5 @@
+# .github/workflows/download.yml
+
 name: Download ANBIMA Relatórios
 
 on:
@@ -22,27 +24,6 @@ jobs:
         sudo apt update
         sudo apt install -y google-chrome-stable
 
-    - name: Instalar o ChromeDriver compatível com a versão do Google Chrome
+    - name: Instalar ChromeDriver compatível
       run: |
-        # Obtém a versão do Google Chrome
-        CHROME_VERSION=$(google-chrome-stable --version | sed 's/Google Chrome //')
-        # Extrai a versão do major (primeiro número) do Google Chrome
-        CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
-        # Busca a versão do ChromeDriver compatível com a versão do Google Chrome
-        DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION_MAJOR)
-        # Baixa o ChromeDriver compatível
-        wget https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip
-        unzip chromedriver_linux64.zip
-        sudo mv chromedriver /usr/local/bin
-        sudo chmod +x /usr/local/bin/chromedriver
-      shell: bash
 
-    - name: Instalar dependências
-      run: |
-        python3 -m pip install --upgrade pip
-        pip install selenium gspread google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
-
-    - name: Executar script Python
-      run: python3 download_anbima.py
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
