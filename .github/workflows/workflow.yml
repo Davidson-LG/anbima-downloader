@@ -1,3 +1,5 @@
+# .github/workflows/download.yml
+
 name: Download ANBIMA Relatórios
 
 on:
@@ -28,33 +30,34 @@ jobs:
         CHROME_VERSION=$(google-chrome-stable --version | sed 's/Google Chrome //' | awk '{print $1}')
         CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
 
-        # Encontre a versão mais recente do ChromeDriver compatível com a versão do Chrome
+        # Tente obter o ChromeDriver compatível
         DRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION_MAJOR}")
 
-        # Baixe o ChromeDriver compatível
+        # Se não existir ChromeDriver para essa versão, pegue o último geral
+        if [ -z "$DRIVER_VERSION" ]; then
+          echo "Versão específica não encontrada. Baixando último ChromeDriver disponível."
+          DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+        fi
+
+        # Baixe o ChromeDriver
         wget "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
 
         # Extraia o arquivo
         unzip chromedriver_linux64.zip
 
-        # Mova o arquivo do chromedriver para o diretório local
+        # Mova para o /usr/local/bin
         sudo mv chromedriver /usr/local/bin/chromedriver
-
-        # Torne o chromedriver executável
         sudo chmod +x /usr/local/bin/chromedriver
 
     - name: Instalar dependências Python
       run: |
-        python -m venv venv
+        python3 -m venv venv
         source venv/bin/activate
         pip install -r requirements.txt
 
-    - name: Executar o script Python para baixar os arquivos
+    - name: Rodar o script de download
+      env:
+        GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
       run: |
         source venv/bin/activate
-        python download_script.py
-
-    - name: Subir arquivos para o Google Drive
-      run: |
-        source venv/bin/activate
-        python upload_to_drive.py
+        python download_anbima.py
