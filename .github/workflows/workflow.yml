@@ -1,58 +1,38 @@
-name: Automação de Download do IMA-B e Processamento
+name: Set up ChromeDriver
 
 on:
   schedule:
-    - cron: '0 8 * * 1'  # Executa todas as segundas-feiras às 08:00
-  workflow_dispatch:
+    - cron: '0 8 * * 1'  # Executa toda segunda-feira às 08:00
 
 jobs:
-  download_and_process:
+  setup-chromedriver:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out o repositório
-        uses: actions/checkout@v2
+    - name: Verificar versão do Chrome
+      run: |
+        CHROME_VERSION=$(google-chrome --version | sed 's/Google Chrome //' | awk '{print $1}')
+        CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
+        echo "Versão do Chrome: $CHROME_VERSION"
+        echo "Versão principal do Chrome: $CHROME_VERSION_MAJOR"
 
-      - name: Instalar dependências básicas
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget gnupg unzip python3 python3-pip
+    - name: Buscar a versão correta do ChromeDriver
+      run: |
+        DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION_MAJOR})
+        if [ -z "$DRIVER_VERSION" ]; then
+          echo "Versão específica não encontrada. Baixando o último ChromeDriver disponível."
+          DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+        fi
+        echo "Driver version: $DRIVER_VERSION"
+        echo "URL para download do chromedriver: https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
 
-      - name: Adicionar chave do Google Chrome e repositório
-        run: |
-          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-          sudo apt-get update
-
-      - name: Instalar o Google Chrome
-        run: |
-          # Removendo a versão específica e instalando a versão mais recente
-          sudo apt-get install -y google-chrome-stable
-
-      - name: Obter a versão do Chrome
-        run: |
-          CHROME_VERSION=$(google-chrome --version | sed 's/Google Chrome //' | awk '{print $1}')
-          CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
-          echo "Versão do Chrome: $CHROME_VERSION"
-          echo "Versão principal do Chrome: $CHROME_VERSION_MAJOR"
-
-      - name: Buscar a versão correta do ChromeDriver
-        run: |
-          DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION_MAJOR})
-          if [ -z "$DRIVER_VERSION" ]; then
-            echo "Versão específica não encontrada. Baixando o último ChromeDriver disponível."
-            DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
-          fi
-          echo "Driver version: $DRIVER_VERSION"
-
-      - name: Baixar e instalar o ChromeDriver
-        run: |
-          wget -O chromedriver_linux64.zip "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/local/bin/chromedriver
-          sudo chmod +x /usr/local/bin/chromedriver
-
-      - name: Rodar o script de automação para downloads e processamento
-        run: |
-          # Seu código de automação para download dos arquivos IMA-B, IMA-B5 e IMA-B5+
-          # O código do seu script de automação vai aqui. 
+    - name: Baixar e instalar o ChromeDriver
+      run: |
+        if [ -z "$DRIVER_VERSION" ]; then
+          echo "Erro: DRIVER_VERSION não foi atribuído corretamente."
+          exit 1
+        fi
+        wget -O chromedriver_linux64.zip "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
+        unzip chromedriver_linux64.zip
+        sudo mv chromedriver /usr/local/bin/chromedriver
+        sudo chmod +x /usr/local/bin/chromedriver
