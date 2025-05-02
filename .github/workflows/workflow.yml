@@ -31,6 +31,12 @@ jobs:
         # Encontre a versão mais recente do ChromeDriver compatível com a versão do Chrome
         DRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION_MAJOR}")
 
+        # Verifique se a versão foi obtida corretamente
+        if [ -z "$DRIVER_VERSION" ]; then
+          echo "Erro: Não foi possível obter a versão do ChromeDriver."
+          exit 1
+        fi
+
         # Baixe o ChromeDriver compatível
         wget "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
 
@@ -43,19 +49,10 @@ jobs:
         # Torne o chromedriver executável
         sudo chmod +x /usr/local/bin/chromedriver
 
-    - name: Instalar dependências Python
+    - name: Instalar dependências do Python
       run: |
-        python -m venv venv
-        source venv/bin/activate
-        pip install -r requirements.txt
+        python -m pip install --upgrade pip
+        pip install gspread google-auth google-auth-oauthlib google-auth-httplib2 selenium
 
-    - name: Executar o script Python para baixar os arquivos
+    - name: Rodar o script de download e upload
       run: |
-        source venv/bin/activate
-        python download_script.py
-
-    - name: Subir arquivos para o Google Drive
-      run: |
-        source venv/bin/activate
-        python upload_to_drive.py
-
