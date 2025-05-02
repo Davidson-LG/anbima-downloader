@@ -2,7 +2,7 @@ name: Download ANBIMA Relatórios
 
 on:
   schedule:
-    - cron: '0 11 * * 1'  # Segunda-feira 08:00 BRT (11h UTC)
+    - cron: '0 11 * * 1'  # Segunda-feira 08:00 Brasília (11h UTC)
   workflow_dispatch:
 
 jobs:
@@ -13,29 +13,48 @@ jobs:
     - name: Checkout do repositório
       uses: actions/checkout@v4
 
-    - name: Configurar Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: Instalar Chrome e ChromeDriver
-      uses: browser-actions/setup-chrome@v1
-      with:
-        chrome-version: 'latest'
-        chromedriver-version: 'latest'
-
-    - name: Instalar dependências
+    - name: Instalar Google Chrome
       run: |
-        python -m pip install --upgrade pip
-        pip install gspread google-auth google-auth-oauthlib google-auth-httplib2 selenium
+        sudo apt update
+        sudo apt install -y wget unzip gnupg2
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt update
+        sudo apt install -y google-chrome-stable
 
-    - name: Executar script
-      run: python anbima_downloader.py
+    - name: Instalar ChromeDriver compatível
+      run: |
+        # Obtenha a versão do Chrome
+        CHROME_VERSION=$(google-chrome-stable --version | sed 's/Google Chrome //' | awk '{print $1}')
+        CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
 
-    - name: Fazer upload dos arquivos
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: anbima-reports
-        path: downloads/
-        retention-days: 5
+        # Encontre a versão mais recente do ChromeDriver compatível com a versão do Chrome
+        DRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION_MAJOR}")
+
+        # Baixe o ChromeDriver compatível
+        wget "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
+
+        # Extraia o arquivo
+        unzip chromedriver_linux64.zip
+
+        # Mova o arquivo do chromedriver para o diretório local
+        sudo mv chromedriver /usr/local/bin/chromedriver
+
+        # Torne o chromedriver executável
+        sudo chmod +x /usr/local/bin/chromedriver
+
+    - name: Instalar dependências Python
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+
+    - name: Executar o script Python para baixar os arquivos
+      run: |
+        source venv/bin/activate
+        python download_script.py
+
+    - name: Subir arquivos para o Google Drive
+      run: |
+        source venv/bin/activate
+        python upload_to_drive.py
