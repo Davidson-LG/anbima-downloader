@@ -19,7 +19,7 @@ jobs:
         python-version: '3.10'
 
     - name: Instalar Chrome e ChromeDriver
-      uses: browser-actions/setup-chrome@latest
+      uses: browser-actions/setup-chrome@v1
       with:
         chrome-version: 'latest'
         chromedriver-version: 'latest'
@@ -32,9 +32,10 @@ jobs:
     - name: Executar script
       run: python anbima_downloader.py
 
-    - name: Fazer upload dos arquivos (opcional)
-      uses: actions/upload-artifact@v3
-      if: ${{ always() }}
+    - name: Fazer upload dos arquivos
+      uses: actions/upload-artifact@v4
+      if: always()
       with:
         name: anbima-reports
         path: downloads/
+        retention-days: 5
