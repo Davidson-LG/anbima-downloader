@@ -1,38 +1,49 @@
-name: Set up ChromeDriver
+# .github/workflows/download.yml
+
+name: Download ANBIMA Relatórios e Upload no Google Drive
 
 on:
   schedule:
-    - cron: '0 8 * * 1'  # Executa toda segunda-feira às 08:00
+    - cron: '0 11 * * 1'  # Segunda-feira às 08:00 Brasília (11h UTC)
+  workflow_dispatch:
 
 jobs:
-  setup-chromedriver:
+  download:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Verificar versão do Chrome
+    - name: Checkout do repositório
+      uses: actions/checkout@v4
+
+    - name: Instalar Google Chrome
       run: |
-        CHROME_VERSION=$(google-chrome --version | sed 's/Google Chrome //' | awk '{print $1}')
+        sudo apt update
+        sudo apt install -y wget unzip gnupg2
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt update
+        sudo apt install -y google-chrome-stable
+
+    - name: Instalar ChromeDriver compatível
+      run: |
+        CHROME_VERSION=$(google-chrome-stable --version | sed 's/Google Chrome //')
         CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
-        echo "Versão do Chrome: $CHROME_VERSION"
-        echo "Versão principal do Chrome: $CHROME_VERSION_MAJOR"
-
-    - name: Buscar a versão correta do ChromeDriver
-      run: |
-        DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION_MAJOR})
-        if [ -z "$DRIVER_VERSION" ]; then
-          echo "Versão específica não encontrada. Baixando o último ChromeDriver disponível."
-          DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
-        fi
-        echo "Driver version: $DRIVER_VERSION"
-        if [ -z "$DRIVER_VERSION" ]; then
-          echo "Erro: DRIVER_VERSION não foi atribuído corretamente."
-          exit 1
-        fi
-        echo "URL para download do chromedriver: https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
-
-    - name: Baixar e instalar o ChromeDriver
-      run: |
-        wget -O chromedriver_linux64.zip "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
+        DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION_MAJOR)
+        wget https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip
         unzip chromedriver_linux64.zip
-        sudo mv chromedriver /usr/local/bin/chromedriver
+        sudo mv chromedriver /usr/local/bin/
         sudo chmod +x /usr/local/bin/chromedriver
+
+    - name: Instalar dependências Python
+      run: |
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install selenium gspread google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+
+    - name: Rodar o script Python (download e upload)
+      env:
+        GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+      run: |
+        source venv/bin/activate
+        python seu_script.py
