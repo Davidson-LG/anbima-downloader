@@ -2,8 +2,8 @@ name: Download Anbima Automático
 
 on:
   schedule:
-    - cron: '0 8 * * 1' # Toda segunda-feira às 08:00
-  workflow_dispatch: # Permite executar manualmente também
+    - cron: '0 8 * * 1' # Segunda-feira às 08:00
+  workflow_dispatch:
 
 jobs:
   download_anbima:
@@ -13,40 +13,41 @@ jobs:
     - name: Checkout repositório
       uses: actions/checkout@v4
 
-    - name: Instalar dependências
+    - name: Instalar dependências básicas
       run: |
         sudo apt-get update
-        sudo apt-get install -y wget unzip curl python3 python3-pip google-chrome-stable
+        sudo apt-get install -y wget unzip curl python3 python3-pip
 
     - name: Instalar Google Chrome
       uses: browser-actions/setup-chrome@v1
 
-    - name: Baixar e instalar ChromeDriver correto
+    - name: Instalar ChromeDriver compatível
       run: |
-        # Obtenha a versão do Chrome
-        CHROME_VERSION=$(google-chrome-stable --version | sed 's/Google Chrome //' | awk '{print $1}')
+        # Depois que o Chrome está instalado, podemos descobrir a versão
+        CHROME_VERSION=$(google-chrome --version | sed 's/Google Chrome //' | awk '{print $1}')
         CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
 
-        # Tente obter o ChromeDriver compatível
-        DRIVER_VERSION=$(curl -sS "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION_MAJOR}")
+        echo "Versão do Chrome: $CHROME_VERSION"
+        echo "Versão principal do Chrome: $CHROME_VERSION_MAJOR"
 
-        # Se não existir ChromeDriver para essa versão, pegue o último geral
+        # Buscar o ChromeDriver correto
+        DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION_MAJOR})
+
+        # Se não achar, pega o último disponível
         if [ -z "$DRIVER_VERSION" ]; then
           echo "Versão específica não encontrada. Baixando último ChromeDriver disponível."
           DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
         fi
 
-        # Baixe o ChromeDriver
-        wget "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
+        echo "Driver version: $DRIVER_VERSION"
 
-        # Extraia o arquivo
+        # Baixar e instalar
+        wget -O chromedriver_linux64.zip "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
         unzip chromedriver_linux64.zip
-
-        # Mova para o /usr/local/bin
         sudo mv chromedriver /usr/local/bin/chromedriver
         sudo chmod +x /usr/local/bin/chromedriver
 
-    - name: Instalar dependências do Python
+    - name: Instalar dependências Python
       run: |
         pip install -r requirements.txt
 
