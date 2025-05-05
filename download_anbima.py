@@ -6,7 +6,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
-from google.oauth2 import service_account
+import gspread
+from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -15,7 +16,7 @@ os.makedirs('downloads', exist_ok=True)
 
 # Configurações do Chrome
 chrome_options = Options()
-chrome_options.add_argument('--headless')
+chrome_options.add_argument('--headless=new')  # Use o novo modo headless
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
 chrome_options.add_argument('--disable-gpu')
@@ -27,7 +28,7 @@ prefs = {
 }
 chrome_options.add_experimental_option("prefs", prefs)
 
-# Inicia o Chrome
+# Inicia o Chrome usando Selenium Manager (não precisa mais do ChromeDriver manual)
 driver = webdriver.Chrome(options=chrome_options)
 
 # Lista dos índices
@@ -81,13 +82,17 @@ driver.quit()
 try:
     scopes = ["https://www.googleapis.com/auth/drive"]
 
-    # Pega o conteúdo do segredo da variável de ambiente
-    credentials_info = json.loads(os.environ.get('GOOGLE_CREDENTIALS'))
-    credentials = service_account.Credentials.from_service_account_info(credentials_info, scopes=scopes)
+    # Recupera as credenciais do ambiente (passadas no GitHub Secrets)
+    credentials_json = os.environ.get('GOOGLE_CREDENTIALS')
+    if not credentials_json:
+        raise Exception("Credenciais do Google não encontradas. Verifique seu GitHub Secrets.")
+
+    credentials_info = json.loads(credentials_json)
+    credentials = Credentials.from_service_account_info(credentials_info, scopes=scopes)
 
     service = build('drive', 'v3', credentials=credentials)
 
-    # ATENÇÃO: Substitua pelo ID real da sua pasta (não a URL)
+    # ID da pasta no Google Drive
     folder_id = '1Q-wo4KFvGIZEEe9PoTMt_TPUK9Kuww_e'
 
     for file in os.listdir('downloads'):
