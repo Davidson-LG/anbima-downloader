@@ -1,10 +1,8 @@
-# .github/workflows/download.yml
-
 name: Download ANBIMA Relatórios e Upload no Google Drive
 
 on:
   schedule:
-    - cron: '0 11 * * 1'  # Segunda-feira às 08:00 (Brasília 08h = UTC 11h)
+    - cron: '0 11 * * 1'
   workflow_dispatch:
 
 jobs:
@@ -15,27 +13,10 @@ jobs:
     - name: Checkout do repositório
       uses: actions/checkout@v4
 
-    - name: Instalar Google Chrome
-      run: |
-        sudo apt update
-        sudo apt install -y wget gnupg2 software-properties-common
-        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-        echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main' | sudo tee /etc/apt/sources.list.d/google-chrome.list
-        sudo apt update
-        sudo apt install -y google-chrome-stable
-        sudo ln -s /usr/bin/google-chrome-stable /usr/bin/google-chrome
+    - name: Setup Chrome, Chromedriver e Selenium
+      uses: nanasess/setup-chromedriver@v2
 
-    - name: Instalar ChromeDriver compatível
-      run: |
-        CHROME_VERSION=$(google-chrome --version | sed 's/Google Chrome //')
-        CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
-        DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION_MAJOR)
-        wget https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip
-        unzip chromedriver_linux64.zip
-        sudo mv chromedriver /usr/local/bin/
-        sudo chmod +x /usr/local/bin/chromedriver
-
-    - name: Configurar ambiente Python
+    - name: Instalar dependências Python
       run: |
         python3 -m venv venv
         source venv/bin/activate
