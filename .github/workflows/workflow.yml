@@ -46,4 +46,4 @@ jobs:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
       run: |
         source venv/bin/activate
-        python seu_script.py  # <---- Troque aqui pelo nome do seu arquivo Python se não for exatamente "seu_script.py"
+        python download_anbima.py
