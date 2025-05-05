@@ -15,26 +15,14 @@ jobs:
     - name: Checkout do repositório
       uses: actions/checkout@v4
 
-    - name: Instalar Google Chrome
+    - name: Instalar dependências Python e o Chrome
       run: |
         sudo apt update
-        sudo apt install -y wget unzip gnupg2
-        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-        sudo apt update
-        sudo apt install -y google-chrome-stable
+        sudo apt install -y wget unzip gnupg2 python3-selenium
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -f install -y
 
-    - name: Instalar ChromeDriver compatível
-      run: |
-        CHROME_VERSION=$(google-chrome-stable --version | sed 's/Google Chrome //')
-        CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
-        DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION_MAJOR)
-        wget https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip
-        unzip chromedriver_linux64.zip
-        sudo mv chromedriver /usr/local/bin/
-        sudo chmod +x /usr/local/bin/chromedriver
-
-    - name: Instalar dependências Python
+    - name: Instalar ambiente virtual e dependências do projeto
       run: |
         python3 -m venv venv
         source venv/bin/activate
