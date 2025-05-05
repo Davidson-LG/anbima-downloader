@@ -4,7 +4,7 @@ name: Download ANBIMA Relatórios e Upload no Google Drive
 
 on:
   schedule:
-    - cron: '0 11 * * 1'  # Segunda-feira às 08:00 Brasília (11h UTC)
+    - cron: '0 11 * * 1'  # Segunda-feira às 08:00 (Brasília 08h = UTC 11h)
   workflow_dispatch:
 
 jobs:
@@ -15,23 +15,36 @@ jobs:
     - name: Checkout do repositório
       uses: actions/checkout@v4
 
-    - name: Instalar dependências Python e o Chrome
+    - name: Instalar Google Chrome
       run: |
         sudo apt update
-        sudo apt install -y wget unzip gnupg2 python3-selenium
-        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -f install -y
+        sudo apt install -y wget gnupg2 software-properties-common
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+        echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main' | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt update
+        sudo apt install -y google-chrome-stable
+        sudo ln -s /usr/bin/google-chrome-stable /usr/bin/google-chrome
 
-    - name: Instalar ambiente virtual e dependências do projeto
+    - name: Instalar ChromeDriver compatível
+      run: |
+        CHROME_VERSION=$(google-chrome --version | sed 's/Google Chrome //')
+        CHROME_VERSION_MAJOR=$(echo $CHROME_VERSION | cut -d '.' -f 1)
+        DRIVER_VERSION=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION_MAJOR)
+        wget https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        sudo mv chromedriver /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chromedriver
+
+    - name: Configurar ambiente Python
       run: |
         python3 -m venv venv
         source venv/bin/activate
         pip install --upgrade pip
-        pip install --no-cache-dir selenium gspread google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+        pip install selenium gspread google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
 
     - name: Rodar o script Python (download e upload)
       env:
-        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+        GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
       run: |
         source venv/bin/activate
         python download_anbima.py
