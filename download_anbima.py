@@ -1,12 +1,12 @@
 import os
 import time
+import json
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
-import gspread
-from google.oauth2.service_account import Credentials
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -80,7 +80,11 @@ driver.quit()
 # Upload para Google Drive
 try:
     scopes = ["https://www.googleapis.com/auth/drive"]
-    credentials = Credentials.from_service_account_file('credentials.json', scopes=scopes)
+
+    # Pega o conteúdo do segredo da variável de ambiente
+    credentials_info = json.loads(os.environ.get('GOOGLE_CREDENTIALS'))
+    credentials = service_account.Credentials.from_service_account_info(credentials_info, scopes=scopes)
+
     service = build('drive', 'v3', credentials=credentials)
 
     # ATENÇÃO: Substitua pelo ID real da sua pasta (não a URL)
