@@ -5,30 +5,26 @@ from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select
 import gspread
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# Configurações iniciais
+# Configurações
 os.makedirs('downloads', exist_ok=True)
+hoje = datetime.now().strftime('%Y-%m-%d')
 
-# Configurações do Chrome
+# Configuração do Chrome headless
 chrome_options = Options()
-chrome_options.add_argument('--headless=new')  # Use o novo modo headless
+chrome_options.add_argument('--headless=new')
 chrome_options.add_argument('--no-sandbox')
 chrome_options.add_argument('--disable-dev-shm-usage')
-chrome_options.add_argument('--disable-gpu')
-
 prefs = {
     "download.default_directory": os.path.abspath("downloads"),
     "download.prompt_for_download": False,
     "download.directory_upgrade": True
 }
 chrome_options.add_experimental_option("prefs", prefs)
-
-# Inicia o Chrome usando Selenium Manager (não precisa mais do ChromeDriver manual)
 driver = webdriver.Chrome(options=chrome_options)
 
 # Lista dos índices
@@ -38,51 +34,62 @@ indices = [
     ('IMA-B 5+', '5', 'IMA-B5+')
 ]
 
-hoje = datetime.now().strftime('%Y-%m-%d')
-
+# Navegação e download de cada índice
 for nome_exibicao, valor_select, nome_arquivo in indices:
     try:
         driver.get('https://www.anbima.com.br/informacoes/ima/ima.asp')
         time.sleep(3)
 
-        # Seleciona "Resultados"
-        select_visualizacao = Select(driver.find_element(By.NAME, 'opcao'))
-        select_visualizacao.select_by_value('resultado')
+        # Clique direto no botão de resultado
+        driver.find_element(By.XPATH, '//input[@value="Resultado"]').click()
+        time.sleep(2)
 
-        # Seleciona o índice
-        select_indice = Select(driver.find_element(By.NAME, 'indice'))
-        select_indice.select_by_value(valor_select)
+        # Seleciona o índice no formulário
+        driver.find_element(By.NAME, 'indice').send_keys(valor_select)
 
-        # Clica em Consultar
-        driver.find_element(By.XPATH, '//input[@type="submit" and @value="Consultar"]').click()
+        # Submete
+        driver.find_element(By.XPATH, '//input[@value="Consultar"]').click()
         time.sleep(5)
 
-        # Download
+        # Clica no link de Download
         driver.find_element(By.LINK_TEXT, 'Download').click()
         print(f'Download iniciado para {nome_exibicao}...')
         time.sleep(8)
 
-        # Renomeia arquivo
+        # Renomeia o arquivo
         arquivos = [f for f in os.listdir('downloads') if f.endswith('.csv')]
         if arquivos:
-            arquivo_baixado = max(
-                [os.path.join('downloads', f) for f in arquivos],
-                key=os.path.getctime
-            )
+            arquivo_baixado = max([os.path.join('downloads', f) for f in arquivos], key=os.path.getctime)
             novo_nome = os.path.join('downloads', f"{nome_arquivo}_{hoje}.csv")
             os.rename(arquivo_baixado, novo_nome)
             print(f"Arquivo renomeado: {novo_nome}")
-
     except Exception as e:
         print(f"Erro em {nome_exibicao}: {str(e)}")
 
+# Baixar o Quadro Resumo
+try:
+    driver.get("https://www.anbima.com.br/informacoes/ima/ima.asp")
+    time.sleep(3)
+    driver.find_element(By.XPATH, '//input[@value="Quadro resumo"]').click()
+    time.sleep(2)
+    driver.find_element(By.LINK_TEXT, 'Download').click()
+    time.sleep(5)
+
+    # Renomeia
+    arquivos = [f for f in os.listdir('downloads') if f.endswith('.csv')]
+    if arquivos:
+        arquivo_baixado = max([os.path.join('downloads', f) for f in arquivos], key=os.path.getctime)
+        novo_nome = os.path.join('downloads', f"Quadro_Resumo_{hoje}.csv")
+        os.rename(arquivo_baixado, novo_nome)
+        print(f"Quadro Resumo baixado: {novo_nome}")
+except Exception as e:
+    print(f"Erro no Quadro Resumo: {str(e)}")
+
 driver.quit()
 
-# Upload para Google Drive
+# Upload para o Google Drive
 try:
     scopes = ["https://www.googleapis.com/auth/drive"]
-
-    # Recupera as credenciais do ambiente (passadas no GitHub Secrets)
     credentials_json = os.environ.get('GOOGLE_CREDENTIALS')
     if not credentials_json:
         raise Exception("Credenciais do Google não encontradas. Verifique seu GitHub Secrets.")
@@ -92,8 +99,7 @@ try:
 
     service = build('drive', 'v3', credentials=credentials)
 
-    # ID da pasta no Google Drive
-    folder_id = '1Q-wo4KFvGIZEEe9PoTMt_TPUK9Kuww_e'
+    folder_id = '1Q-wo4KFvGIZEEe9PoTMt_TPUK9Kuww_e'  # ID da pasta 'IMA’s'
 
     for file in os.listdir('downloads'):
         if file.endswith('.csv'):
